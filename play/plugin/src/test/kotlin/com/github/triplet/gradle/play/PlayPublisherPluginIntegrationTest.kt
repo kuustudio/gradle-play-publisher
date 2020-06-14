@@ -64,6 +64,30 @@ class PlayPublisherPluginIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `GPP Groovy configuration options`() {
+        // language=gradle
+        val config = """
+            play {
+                TODO
+            }
+        """
+
+        execute(config, "help")
+    }
+
+    @Test
+    fun `GPP Kotlin configuration options`() {
+        // language=gradle
+        val config = """
+            play {
+                TODO
+            }
+        """
+
+        execute(config, "help")
+    }
+
+    @Test
     fun `Disabled GPP variant is ignored`() {
         // language=gradle
         val config = """

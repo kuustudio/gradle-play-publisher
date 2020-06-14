@@ -2,7 +2,6 @@ package com.github.triplet.gradle.play.tasks
 
 import com.android.build.gradle.api.ApplicationVariant
 import com.github.triplet.gradle.play.PlayPublisherExtension
-import com.github.triplet.gradle.play.internal.promoteTrackOrDefault
 import com.github.triplet.gradle.play.tasks.internal.PublishArtifactTaskBase
 import com.github.triplet.gradle.play.tasks.internal.UpdatableTrackExtensionOptions
 import com.github.triplet.gradle.play.tasks.internal.workers.PublishArtifactWorkerBase
@@ -31,18 +30,19 @@ internal abstract class PromoteRelease @Inject constructor(
 
     abstract class Promoter : PublishArtifactWorkerBase<PublishArtifactWorkerBase.ArtifactPublishingParams>() {
         override fun upload() {
-            val fromTrack = config.fromTrack ?: edits.findLeastStableTrackName()
+            val fromTrack = config.fromTrack.orNull ?: edits.findLeastStableTrackName()
             checkNotNull(fromTrack) { "No tracks to promote. Did you mean to run publish?" }
+            val promoteTrack = config.promoteTrack.orNull ?: fromTrack
 
             edits.promoteRelease(
-                    config.promoteTrackOrDefault,
+                    promoteTrack,
                     fromTrack,
-                    config.releaseStatus,
-                    findReleaseName(config.promoteTrackOrDefault),
+                    config.releaseStatus.orNull,
+                    findReleaseName(promoteTrack),
                     findReleaseNotes(fromTrack),
-                    config.userFraction,
-                    config.updatePriority,
-                    config.retainArtifacts
+                    config.userFraction.orNull,
+                    config.updatePriority.orNull,
+                    config.retain.artifacts.orNull
             )
         }
     }

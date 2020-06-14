@@ -3,10 +3,6 @@ package com.github.triplet.gradle.play.tasks
 import com.android.build.gradle.api.ApplicationVariant
 import com.github.triplet.gradle.common.utils.orNull
 import com.github.triplet.gradle.play.PlayPublisherExtension
-import com.github.triplet.gradle.play.internal.releaseStatusOrDefault
-import com.github.triplet.gradle.play.internal.resolutionStrategyOrDefault
-import com.github.triplet.gradle.play.internal.trackOrDefault
-import com.github.triplet.gradle.play.internal.userFractionOrDefault
 import com.github.triplet.gradle.play.tasks.internal.PublishableTrackExtensionOptions
 import com.github.triplet.gradle.play.tasks.internal.UploadArtifactTaskBase
 import com.github.triplet.gradle.play.tasks.internal.findBundleFile
@@ -54,17 +50,17 @@ internal abstract class PublishBundle @Inject constructor(
             edits.uploadBundle(
                     bundleFile,
                     parameters.mappingFile.orNull?.asFile,
-                    config.resolutionStrategyOrDefault,
+                    config.resolutionStrategy.get(),
                     findBestVersionCode(bundleFile),
                     parameters.variantName.get(),
                     parameters.skippedMarker.get().asFile.exists(),
-                    config.trackOrDefault,
-                    config.releaseStatusOrDefault,
-                    findReleaseName(config.trackOrDefault),
-                    findReleaseNotes(config.trackOrDefault),
-                    config.userFractionOrDefault,
-                    config.updatePriority,
-                    config.retainArtifacts
+                    config.track.get(),
+                    config.releaseStatus.orNull,
+                    findReleaseName(config.track.get()),
+                    findReleaseNotes(config.track.get()),
+                    config.userFraction.orNull,
+                    config.updatePriority.orNull,
+                    config.retain.artifacts.orNull
             )
         }
 

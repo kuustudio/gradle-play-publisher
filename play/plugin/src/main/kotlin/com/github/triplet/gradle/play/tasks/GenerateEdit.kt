@@ -7,9 +7,7 @@ import com.github.triplet.gradle.common.utils.nullOrFull
 import com.github.triplet.gradle.common.utils.orNull
 import com.github.triplet.gradle.common.utils.safeCreateNewFile
 import com.github.triplet.gradle.play.PlayPublisherExtension
-import com.github.triplet.gradle.play.internal.PlayExtensionConfig
-import com.github.triplet.gradle.play.internal.serializableConfig
-import com.github.triplet.gradle.play.internal.serviceAccountCredentialsOrDefault
+import com.github.triplet.gradle.play.internal.credentialStream
 import com.github.triplet.gradle.play.tasks.internal.EditTaskBase
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.file.RegularFileProperty
@@ -36,7 +34,7 @@ internal abstract class GenerateEdit @Inject constructor(
     fun generate() {
         val editId = editIdFile
         project.serviceOf<WorkerExecutor>().noIsolation().submit(Generator::class) {
-            config.set(extension.serializableConfig)
+            config.set(extension)
             editIdFile.set(editId)
         }
     }
@@ -46,7 +44,7 @@ internal abstract class GenerateEdit @Inject constructor(
     ) : WorkAction<Generator.Params> {
         private val file = parameters.editIdFile.get().asFile
         private val appId = file.nameWithoutExtension
-        private val publisher = parameters.config.get().serviceAccountCredentialsOrDefault.use {
+        private val publisher = parameters.config.get().credentialStream().use {
             PlayPublisher(it, appId)
         }
 
@@ -95,7 +93,7 @@ internal abstract class GenerateEdit @Inject constructor(
         }
 
         interface Params : WorkParameters {
-            val config: Property<PlayExtensionConfig>
+            val config: Property<PlayPublisherExtension>
             val editIdFile: RegularFileProperty
         }
     }

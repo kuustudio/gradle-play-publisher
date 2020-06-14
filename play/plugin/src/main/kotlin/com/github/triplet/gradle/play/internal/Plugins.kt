@@ -63,9 +63,9 @@ private fun buildExtensionInternal(
 ): PlayPublisherExtension {
     val variantExtension = extensionContainer.findByName(variant.name)
     val flavorExtension = variant.productFlavors.mapNotNull {
-        extensionContainer.findByName(it.getName())
+        extensionContainer.findByName(it.name)
     }.singleOrNull()
-    val buildTypeExtension = extensionContainer.findByName(variant.buildType.getName())
+    val buildTypeExtension = extensionContainer.findByName(variant.buildType.name)
 
     val extensions = listOfNotNull(
             variantExtension,
@@ -76,9 +76,7 @@ private fun buildExtensionInternal(
         it.name
     }
 
-    val merged = mergeExtensions(extensions)
-    baseExtension.evaluate()
-    return merged
+    return mergeExtensions(extensions)
 }
 
 private inline fun <reified T : EditTaskBase> Project.getOrRegisterEditTask(

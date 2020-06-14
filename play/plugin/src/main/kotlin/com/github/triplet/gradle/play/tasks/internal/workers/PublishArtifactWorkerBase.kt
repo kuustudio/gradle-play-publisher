@@ -19,8 +19,8 @@ internal abstract class PublishArtifactWorkerBase<T : PublishArtifactWorkerBase.
     abstract fun upload()
 
     protected fun findReleaseName(track: String): String? {
-        return if (config.releaseName != null) {
-            config.releaseName
+        return if (config.releaseName.isPresent) {
+            config.releaseName.get()
         } else if (parameters.consoleNamesDir.isPresent) {
             val dir = parameters.consoleNamesDir.get()
             val file = dir.file("$track.txt").asFile.orNull()

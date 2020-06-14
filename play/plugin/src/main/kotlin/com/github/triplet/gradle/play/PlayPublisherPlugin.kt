@@ -7,15 +7,12 @@ import com.github.triplet.gradle.common.validation.validateRuntime
 import com.github.triplet.gradle.play.internal.PLAY_CONFIGS_PATH
 import com.github.triplet.gradle.play.internal.PLAY_PATH
 import com.github.triplet.gradle.play.internal.PRODUCTS_PATH
-import com.github.triplet.gradle.play.internal.PlayExtensionConfig
 import com.github.triplet.gradle.play.internal.buildExtension
-import com.github.triplet.gradle.play.internal.config
 import com.github.triplet.gradle.play.internal.flavorNameOrDefault
 import com.github.triplet.gradle.play.internal.getCommitEditTask
 import com.github.triplet.gradle.play.internal.getGenEditTask
 import com.github.triplet.gradle.play.internal.newTask
 import com.github.triplet.gradle.play.internal.playPath
-import com.github.triplet.gradle.play.internal.resolutionStrategyOrDefault
 import com.github.triplet.gradle.play.internal.validateCreds
 import com.github.triplet.gradle.play.internal.validateDebuggability
 import com.github.triplet.gradle.play.tasks.Bootstrap
@@ -45,14 +42,20 @@ import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.withType
-import kotlin.reflect.KMutableProperty1
 
 @Suppress("unused") // Used by Gradle
 internal class PlayPublisherPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         project.validateRuntime()
 
-        project.extensions.create<PlayPublisherExtension>(PLAY_PATH)
+        project.extensions.create<PlayPublisherExtension>(PLAY_PATH).apply {
+            enabled.convention(true)
+            defaultToAppBundles.convention(false)
+            commit.convention(true)
+            track.convention("internal")
+            resolutionStrategy.convention(ResolutionStrategy.FAIL)
+        }
+
         project.plugins.withType<AppPlugin> {
             applyInternal(project)
         }
@@ -133,7 +136,7 @@ internal class PlayPublisherPlugin : Plugin<Project> {
             val extension = buildExtension(extensionContainer, baseExtension)
             project.logger.debug("Extension computed for variant '$name': $extension")
 
-            if (!extension.isEnabled) {
+            if (!extension.enabled.get()) {
                 project.logger.info("Gradle Play Publisher is disabled for variant '$name'.")
                 return@whenObjectAdded
             }
@@ -144,7 +147,7 @@ internal class PlayPublisherPlugin : Plugin<Project> {
                     "publish${variantName}ApkWrapper"
             ) {
                 val addDependencies = {
-                    if (extension.config.artifactDir == null) {
+                    if (!extension.artifactDir.isPresent) {
                         assembleProvider?.let {
                             dependsOn(it)
                         } ?: logger.warn("Assemble task not found. Publishing APKs may not work.")
@@ -152,20 +155,21 @@ internal class PlayPublisherPlugin : Plugin<Project> {
                 }
                 addDependencies()
 
-                extension._callbacks += { property: KMutableProperty1<PlayExtensionConfig, Any?>,
-                                          _: Any? ->
-                    if (property.name == PlayExtensionConfig::artifactDir.name) {
-                        setDependsOn(emptyList<Any>())
-                        addDependencies()
-                    }
-                }
+                // TODO(asaveau): figure out task dependencies when using cli options
+//                extension._callbacks += { property: KMutableProperty1<PlayExtensionConfig, Any?>,
+//                                          _: Any? ->
+//                    if (property.name == PlayExtensionConfig::artifactDir.name) {
+//                        setDependsOn(emptyList<Any>())
+//                        addDependencies()
+//                    }
+//                }
             }
 
             val publishBundleTaskDependenciesHack = project.newTask(
                     "publish${variantName}BundleWrapper"
             ) {
                 val addDependencies = {
-                    if (extension.config.artifactDir == null) {
+                    if (!extension.artifactDir.isPresent) {
                         // TODO blocked by https://issuetracker.google.com/issues/109918868
                         val bundleTask = project.tasks.findByName("bundle$variantName")?.let {
                             dependsOn(it)
@@ -180,13 +184,14 @@ internal class PlayPublisherPlugin : Plugin<Project> {
                 }
                 addDependencies()
 
-                extension._callbacks += { property: KMutableProperty1<PlayExtensionConfig, Any?>,
-                                          _: Any? ->
-                    if (property.name == PlayExtensionConfig::artifactDir.name) {
-                        setDependsOn(emptyList<Any>())
-                        addDependencies()
-                    }
-                }
+                // TODO(asaveau): figure out task dependencies when using cli options
+//                extension._callbacks += { property: KMutableProperty1<PlayExtensionConfig, Any?>,
+//                                          _: Any? ->
+//                    if (property.name == PlayExtensionConfig::artifactDir.name) {
+//                        setDependsOn(emptyList<Any>())
+//                        addDependencies()
+//                    }
+//                }
             }
 
             val publishInternalSharingApkTask = project.newTask<PublishInternalSharingApk>(
@@ -225,7 +230,7 @@ internal class PlayPublisherPlugin : Plugin<Project> {
                     """.trimMargin(),
                     arrayOf(android)
             ) {
-                uploadedArtifacts.set(if (extension.defaultToAppBundles) {
+                uploadedArtifacts.set(if (extension.defaultToAppBundles.get()) {
                     publishInternalSharingBundleTask.flatMap { it.outputDirectory }
                 } else {
                     publishInternalSharingApkTask.flatMap { it.outputDirectory }
@@ -307,8 +312,7 @@ internal class PlayPublisherPlugin : Plugin<Project> {
             ) {
                 editIdFile.set(editFile)
 
-                val shouldRun =
-                        extension.config.resolutionStrategyOrDefault == ResolutionStrategy.AUTO
+                val shouldRun = extension.resolutionStrategy.get() == ResolutionStrategy.AUTO
                 onlyIf { shouldRun }
                 if (shouldRun) dependsOn(genEditTask)
             }
@@ -380,7 +384,11 @@ internal class PlayPublisherPlugin : Plugin<Project> {
                     """.trimMargin(),
                     arrayOf(extension)
             ) {
-                dependsOn(if (extension.defaultToAppBundles) publishBundleTask else publishApkTask)
+                dependsOn(if (extension.defaultToAppBundles.get()) {
+                    publishBundleTask
+                } else {
+                    publishApkTask
+                })
                 dependsOn(publishListingTask)
                 dependsOn(publishProductsTask)
             }

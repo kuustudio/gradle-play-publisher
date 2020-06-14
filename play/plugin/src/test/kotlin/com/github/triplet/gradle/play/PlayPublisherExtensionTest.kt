@@ -2,10 +2,6 @@ package com.github.triplet.gradle.play
 
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import com.github.triplet.gradle.androidpublisher.ResolutionStrategy
-import com.github.triplet.gradle.play.internal.config
-import com.github.triplet.gradle.play.internal.evaluate
-import com.github.triplet.gradle.play.internal.mergeExtensions
-import com.github.triplet.gradle.play.internal.mergeWith
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
